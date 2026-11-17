@@ -8,13 +8,9 @@ export interface GridConfig {
 
 export class Grid {
     
-    //private readonly _viewport: Viewport;
-    
     private _gridSpacing: number = $state(2);
     private _gridOffset: number = $state(0);
     
-    //enableGridLines = $state(true);
-
     get gridSpacing(): number {
         return this._gridSpacing;
     }
@@ -38,7 +34,6 @@ export class Grid {
     }
     
     constructor(config: GridConfig = {}) {
-        //this._viewport = viewport;
         this.gridSpacing = config.gridSpacing ?? this.gridSpacing;
         this.gridOffset = config.gridOffset ?? this.gridOffset;
     }
@@ -66,13 +61,13 @@ export class Grid {
     }
 
     gridIndexToCellCenter(index: Vector2): Vector2 {
-        return this.gridIndexToGraph(index, {
+        return this.gridIndexToWorld(index, {
             x: 0.5,
             y: 0.5
         });
     }
 
-    gridIndexToGraph(
+    gridIndexToWorld(
         index: Vector2,
         t: Vector2
     ): Vector2 {

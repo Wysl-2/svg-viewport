@@ -1,6 +1,4 @@
-import type { Vector2, Line2D, Range, Axis } from '#lib/viewport/types.ts';
-import { decompose } from "#lib/viewport/math.ts";
-import {Grid} from "#lib/viewport/grid.svelte.ts";
+import type { Vector2, Range } from '#lib/viewport/types.ts';
 
 export interface ViewportConfig {
     width?: number;
@@ -119,12 +117,10 @@ export class Viewport {
             y: delta.y / this._scale
         });
     }
-    
-    resetView()
-    {
-        this._viewCenter = {x: 0, y: 0};
-        this._scale = 20;
-        
+
+    resetView(): void {
+        this.viewCenter = { x: 0, y: 0 };
+        this.scale = 20;
     }
 
     zoom(factor: number): void {

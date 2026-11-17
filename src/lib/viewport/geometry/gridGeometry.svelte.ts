@@ -52,12 +52,12 @@ export class GridGeometry {
 
             const line: Line2D = axis === "x"
                 ? {
-                    start: this._viewport.graphToViewport({ x: position, y: this._viewport.yRange.max }),
-                    end:   this._viewport.graphToViewport({ x: position, y: this._viewport.yRange.min }),
+                    start: this._viewport.worldToViewport({ x: position, y: this._viewport.yRange.max }),
+                    end:   this._viewport.worldToViewport({ x: position, y: this._viewport.yRange.min }),
                 }
                 : {
-                    start: this._viewport.graphToViewport({ x: this._viewport.xRange.max, y: position }),
-                    end:   this._viewport.graphToViewport({ x: this._viewport.xRange.min, y: position })
+                    start: this._viewport.worldToViewport({ x: this._viewport.xRange.max, y: position }),
+                    end:   this._viewport.worldToViewport({ x: this._viewport.xRange.min, y: position })
                 }
             lines.push(line)
         }
