@@ -36,29 +36,81 @@ export class Viewport {
     get width(): number {
         return this._width;
     }
+    set width(width: number) {
+        if (!Number.isFinite(width) || width <= 0) {
+            throw new RangeError("Width must be finite and greater than zero.");
+        }
+
+        this._width = width;
+    }
 
     get height(): number {
         return this._height;
     }
+    set height(height: number) {
+        if (!Number.isFinite(height) || height <= 0) {
+            throw new RangeError("Height must be finite and greater than zero.");
+        }
 
-    get viewCenter(): Readonly<Vector2> {
-        return { ...this._viewCenter };
+        this._height = height;
     }
 
     get scale(): number {
         return this._scale;
     }
+    set scale(scale: number) {
+        if (!Number.isFinite(scale) || scale <= 0) {
+            throw new RangeError("Scale must be finite and greater than zero.");
+        }
 
+        this._scale = scale;
+    }
+
+    get viewCenter(): Readonly<Vector2> {
+        return { ...this._viewCenter };
+    }
+    set viewCenter(center: Vector2) {
+        if (
+            !Number.isFinite(center.x) ||
+            !Number.isFinite(center.y)
+        ) {
+            throw new RangeError("View center coordinates must be finite.");
+        }
+
+        this._viewCenter = { ...center };
+    }
+    
     get gridSpacing(): number {
         return this._gridSpacing;
+    }
+    set gridSpacing(spacing: number) {
+        if (!Number.isFinite(spacing) || spacing <= 0) {
+            throw new RangeError("Grid spacing must be finite and greater than zero.");
+        }
+
+        this._gridSpacing = spacing;
     }
 
     get gridOffset(): number {
         return this._gridOffset;
     }
+    set gridOffset(offset: number) {
+        if (!Number.isFinite(offset)) {
+            throw new RangeError("Grid offset must be finite.");
+        }
+
+        this._gridOffset = offset;
+    }
 
     get axisMarkingSize(): number {
         return this._axisMarkingSize;
+    }
+    set axisMarkingSize(size: number) {
+        if (!Number.isFinite(size) || size < 0) {
+            throw new RangeError("Axis marking size must be finite and nonnegative.");
+        }
+
+        this._axisMarkingSize = size;
     }
 
     constructor(config: ViewportConfig = {}) {
@@ -79,23 +131,23 @@ export class Viewport {
     }
 
     readonly center: Vector2 = $derived({
-        x: this.width / 2,
-        y: this.height / 2
+        x: this._width / 2,
+        y: this._height / 2
     });
 
     readonly svgOrigin: Vector2 = $derived({
-        x: this.center.x - this.viewCenter.x * this.scale,
-        y: this.center.y + this.viewCenter.y * this.scale
+        x: this.center.x - this._viewCenter.x * this._scale,
+        y: this.center.y + this._viewCenter.y * this._scale
     })
 
     readonly xRange: Range = $derived({
-        min: this.viewCenter.x - this.width/(2 * this.scale),
-        max: this.viewCenter.x + this.width/(2 * this.scale)
+        min: this._viewCenter.x - this._width/(2 * this._scale),
+        max: this._viewCenter.x + this._width/(2 * this._scale)
     })
 
     readonly yRange: Range = $derived({
-        min: this.viewCenter.y - this.height / (2 * this.scale),
-        max: this.viewCenter.y + this.height / (2 * this.scale)
+        min: this._viewCenter.y - this._height / (2 * this._scale),
+        max: this._viewCenter.y + this._height / (2 * this._scale)
     })
 
     readonly xGridIndexRange: Range = $derived(this.calculateGridIndexRange(this.xRange));
@@ -107,100 +159,48 @@ export class Viewport {
     readonly xGridLines: Line2D[] = $derived(this.calculateGridLines("x"));
     readonly yGridLines: Line2D[] = $derived(this.calculateGridLines("y"));
 
-    readonly pixelSpacing: number = $derived(this.gridSpacing * this.scale)
+    readonly pixelSpacing: number = $derived(this._gridSpacing * this._scale)
 
     readonly horizontalAxis: Line2D = $derived({
         start: { x: 0, y: this.svgOrigin.y },
-        end:   { x: this.width, y: this.svgOrigin.y }
+        end:   { x: this._width, y: this.svgOrigin.y }
     });
 
     readonly verticalAxis: Line2D = $derived({
         start: { x: this.svgOrigin.x, y: 0 },
-        end:   { x: this.svgOrigin.x, y: this.height }
+        end:   { x: this.svgOrigin.x, y: this._height }
     });
 
-    set scale(scale: number) {
-        if (!Number.isFinite(scale) || scale <= 0) {
-            throw new RangeError("Scale must be finite and greater than zero.");
-        }
-
-        this._scale = scale;
-    }
-
-    set width(width: number) {
-        if (!Number.isFinite(width) || width <= 0) {
-            throw new RangeError("Width must be finite and greater than zero.");
-        }
-
-        this._width = width;
-    }
-
-    set height(height: number) {
-        if (!Number.isFinite(height) || height <= 0) {
-            throw new RangeError("Height must be finite and greater than zero.");
-        }
-
-        this._height = height;
-    }
-
-    set gridSpacing(spacing: number) {
-        if (!Number.isFinite(spacing) || spacing <= 0) {
-            throw new RangeError("Grid spacing must be finite and greater than zero.");
-        }
-
-        this._gridSpacing = spacing;
-    }
-
-    set gridOffset(offset: number) {
-        if (!Number.isFinite(offset)) {
-            throw new RangeError("Grid offset must be finite.");
-        }
-
-        this._gridOffset = offset;
-    }
-
-    set viewCenter(center: Vector2) {
-        if (
-            !Number.isFinite(center.x) ||
-            !Number.isFinite(center.y)
-        ) {
-            throw new RangeError("View center coordinates must be finite.");
-        }
-
-        this._viewCenter = { ...center };
-    }
-
-    set axisMarkingSize(size: number) {
-        if (!Number.isFinite(size) || size < 0) {
-            throw new RangeError("Axis marking size must be finite and nonnegative.");
-        }
-
-        this._axisMarkingSize = size;
-    }
-
-
+    
     private calculateGridIndexRange(range: Range): Range {
         return {
-            min: Math.ceil((range.min - this.gridOffset) / this.gridSpacing),
-            max: Math.floor((range.max - this.gridOffset) / this.gridSpacing)
+            min: Math.ceil((range.min - this._gridOffset) / this._gridSpacing),
+            max: Math.floor((range.max - this._gridOffset) / this._gridSpacing)
         };
     }
 
     private calculateGridLines(axis: Axis) : Line2D[] {
         const minPixelSpacing = 5;
+        const maxGridLines = 500;
+
+        const range = axis === "x"
+            ? this.xGridIndexRange
+            : this.yGridIndexRange;
 
         if (this.pixelSpacing < minPixelSpacing) {
+            return [];
+        }
+        
+        const count = range.max - range.min + 1;
+
+        if (!Number.isFinite(count) || count > maxGridLines) {
             return [];
         }
 
         const lines: Line2D[] = []
         
-        const range = axis === "x"
-            ? this.xGridIndexRange
-            : this.yGridIndexRange;
-        
         for(let index = range.min; index <= range.max; index++){
-            const position = this.gridOffset + index * this.gridSpacing;
+            const position = this._gridOffset + index * this._gridSpacing;
 
             const line: Line2D = axis === "x"
                 ? {
@@ -219,8 +219,19 @@ export class Viewport {
 
     private createAxisMarkings(axis: Axis): Line2D[] {
         const minPixelSpacing = 5;
+        const maxAxisMarkings = 500;
 
-        if (this.scale < minPixelSpacing) {
+        const range: Range = axis === "x" 
+            ? this.xRange 
+            : this.yRange;
+        
+        const count = Math.floor(range.max) - Math.ceil(range.min) + 1;
+        
+        if (this._scale < minPixelSpacing) {
+            return [];
+        }
+        
+        if (!Number.isFinite(count) || count > maxAxisMarkings) {
             return [];
         }
 
@@ -232,7 +243,6 @@ export class Viewport {
             return [];
         }
         
-        const range: Range = axis === "x" ? this.xRange : this.yRange;
         const markings: Line2D[] = [];
 
         const halfSize = this.axisMarkingSize / 2;
@@ -283,14 +293,14 @@ export class Viewport {
     }
     
     graphToViewport(point: Vector2): Vector2 {
-        const x = this.center.x + (point.x - this.viewCenter.x) * this.scale;
-        const y = this.center.y - (point.y - this.viewCenter.y) * this.scale;
+        const x = this.center.x + (point.x - this._viewCenter.x) * this._scale;
+        const y = this.center.y - (point.y - this._viewCenter.y) * this._scale;
         return { x, y };
     }
 
     viewportToGraph(svgPoint: Vector2): Vector2 {
-        const x = ((svgPoint.x - this.center.x) / this.scale) + this.viewCenter.x;
-        const y = ((this.center.y - svgPoint.y) / this.scale) + this.viewCenter.y;
+        const x = ((svgPoint.x - this.center.x) / this._scale) + this._viewCenter.x;
+        const y = ((this.center.y - svgPoint.y) / this._scale) + this._viewCenter.y;
         return { x, y };
     }
 
@@ -298,13 +308,13 @@ export class Viewport {
         return {
             x: this.coordinateToIndex(
                 position.x,
-                this.gridSpacing,
-                this.gridOffset
+                this._gridSpacing,
+                this._gridOffset
             ),
             y: this.coordinateToIndex(
                 position.y,
-                this.gridSpacing,
-                this.gridOffset
+                this._gridSpacing,
+                this._gridOffset
             )
         };
     }
@@ -314,11 +324,11 @@ export class Viewport {
         local: Vector2;
     } {
         const x = decompose(
-            (position.x - this.gridOffset) / this.gridSpacing
+            (position.x - this._gridOffset) / this._gridSpacing
         );
 
         const y = decompose(
-            (position.y - this.gridOffset) / this.gridSpacing
+            (position.y - this._gridOffset) / this._gridSpacing
         );
 
         return {
@@ -348,14 +358,14 @@ export class Viewport {
             x: this.dequantise(
                 index.x,
                 t.x,
-                this.gridSpacing,
-                this.gridOffset
+                this._gridSpacing,
+                this._gridOffset
             ),
             y: this.dequantise(
                 index.y,
                 t.y,
-                this.gridSpacing,
-                this.gridOffset
+                this._gridSpacing,
+                this._gridOffset
             )
         };
     }

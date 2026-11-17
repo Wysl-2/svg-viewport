@@ -8,12 +8,11 @@
         scale: 20,
         gridSpacing: 2,
         axisMarkingSize: 5,
-        viewCenter: {x: 14, y: 14},
+        viewCenter: {x: 0, y: 0},
         enableViewportAxes: false
     })
     
     viewport.scale = 20
-    viewport.viewCenter = {x: 20, y:10}
 
     let graphPosition: Vector2 = $state({x: 0, y: 0})
     let gridIndexLocal = $state(viewport.graphToGridLocal({ x: 0, y: 0 }));
