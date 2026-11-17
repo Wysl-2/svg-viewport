@@ -1,21 +1,31 @@
 <script lang="ts">
     import { Viewport } from "#lib/viewport/viewport.svelte.ts";
+    import { Grid } from "#lib/viewport/grid.svelte.ts"
+    import { AxesGeometry } from "#lib/viewport/geometry/axesGeometry.svelte.ts";
+    import { GridGeometry } from "#lib/viewport/geometry/gridGeometry.svelte.ts";
+    import { clientToSvg } from "#lib/viewport/renderers/coordinates.ts";
     import type { Vector2 } from "#lib/viewport/types.ts";
 
     const viewport = new Viewport({
         width: 800, 
         height: 800,
         scale: 20,
-        gridSpacing: 2,
-        axisMarkingSize: 5,
-        viewCenter: {x: 0, y: 0},
-        enableViewportAxes: false
+        viewCenter: {x: 0, y: 0}
     })
     
-    viewport.scale = 10
-
+    const grid = new Grid({
+        gridSpacing: 2,
+        gridOffset: 0
+    })
+    
+    const axesGeometry = new AxesGeometry(viewport)
+    const gridGeometry = new GridGeometry(viewport, grid)
+    
+    let enableGridLines = $state(true)
+    let enableGraphAxes = $state(true)
+    
     let graphPosition: Vector2 = $state({x: 0, y: 0})
-    let gridIndexLocal = $state(viewport.graphToGridLocal({ x: 0, y: 0 }));
+    let gridIndexLocal = $state(grid.worldToGridLocal({ x: 0, y: 0 }));
 
     let lastPointerPosition: Vector2 | null = $state(null);
     let isDragging = $state(false);
@@ -23,7 +33,7 @@
     function handlePointerMove(event: PointerEvent) {
         const svg = event.currentTarget as SVGSVGElement;
 
-        const point = viewport.clientToSvg(
+        const point = clientToSvg(
             { x: event.clientX, y: event.clientY },
             svg
         );
@@ -39,8 +49,8 @@
 
         lastPointerPosition = point;
 
-        graphPosition = viewport.viewportToGraph(point);
-        gridIndexLocal = viewport.graphToGridLocal(graphPosition);
+        graphPosition = viewport.viewportToWorld(point);
+        gridIndexLocal = grid.worldToGridLocal(graphPosition);
     }
 
     function handlePointerDown(event: PointerEvent) {
@@ -50,7 +60,7 @@
 
         isDragging = true;
 
-        lastPointerPosition = viewport.clientToSvg(
+        lastPointerPosition = clientToSvg(
             { x: event.clientX, y: event.clientY },
             svg
         );
@@ -74,19 +84,19 @@
 
         const svg = event.currentTarget as SVGSVGElement;
 
-        const svgPoint = viewport.clientToSvg(
+        const svgPoint = clientToSvg(
             { x: event.clientX, y: event.clientY },
             svg
         );
 
-        const graphPoint = viewport.viewportToGraph(svgPoint);
+        const graphPoint = viewport.viewportToWorld(svgPoint);
 
         const zoomFactor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
 
         viewport.zoomAt(zoomFactor, graphPoint);
 
-        graphPosition = viewport.viewportToGraph(svgPoint);
-        gridIndexLocal = viewport.graphToGridLocal(graphPosition);
+        graphPosition = viewport.viewportToWorld(svgPoint);
+        gridIndexLocal = grid.worldToGridLocal(graphPosition);
     }
     
 </script>
@@ -115,8 +125,8 @@
         onwheel={handleWheel}
 >
     <!-- Draw Grid Lines-->
-    {#if viewport.enableGridLines}
-        {#each viewport.xGridLines as line}
+    {#if enableGridLines}
+        {#each gridGeometry.xGridLines as line}
             <line
             x1={line.start.x}
             y1={line.start.y}
@@ -125,7 +135,7 @@
             stroke="lightgrey"/>
         {/each}
 
-        {#each viewport.yGridLines as line}
+        {#each gridGeometry.yGridLines as line}
             <line
                     x1={line.start.x}
                     y1={line.start.y}
@@ -135,9 +145,9 @@
         {/each}
     {/if}
 
-    {#if viewport.enableGraphAxes}
+    {#if enableGraphAxes}
         <!-- Horizontal Axis -->
-        {#each viewport.xAxisMarkings as marking}
+        {#each axesGeometry.xAxisMarkings as marking}
             <line
                     x1={marking.start.x}
                     y1={marking.start.y}
@@ -148,15 +158,15 @@
         {/each}
 
         <line
-                x1={viewport.horizontalAxis.start.x}
-                y1={viewport.horizontalAxis.start.y}
-                x2={viewport.horizontalAxis.end.x}
-                y2={viewport.horizontalAxis.end.y}
+                x1={axesGeometry.horizontalAxis.start.x}
+                y1={axesGeometry.horizontalAxis.start.y}
+                x2={axesGeometry.horizontalAxis.end.x}
+                y2={axesGeometry.horizontalAxis.end.y}
                 stroke="black"
         />
 
         <!-- Vertical Axis -->
-        {#each viewport.yAxisMarkings as marking}
+        {#each axesGeometry.yAxisMarkings as marking}
             <line
                     x1={marking.start.x}
                     y1={marking.start.y}
@@ -167,10 +177,10 @@
         {/each}
 
         <line
-                x1={viewport.verticalAxis.start.x}
-                y1={viewport.verticalAxis.start.y}
-                x2={viewport.verticalAxis.end.x}
-                y2={viewport.verticalAxis.end.y}
+                x1={axesGeometry.verticalAxis.start.x}
+                y1={axesGeometry.verticalAxis.start.y}
+                x2={axesGeometry.verticalAxis.end.x}
+                y2={axesGeometry.verticalAxis.end.y}
                 stroke="black"
         />
     {/if}
