@@ -3,8 +3,8 @@
     import type { Vector2 } from "#lib/viewport/types.ts";
 
     const viewport = new Viewport({
-        width: 600, 
-        height: 600,
+        width: 800, 
+        height: 800,
         scale: 20,
         gridSpacing: 2,
         axisMarkingSize: 5,
@@ -17,17 +17,56 @@
     let graphPosition: Vector2 = $state({x: 0, y: 0})
     let gridIndexLocal = $state(viewport.graphToGridLocal({ x: 0, y: 0 }));
 
+    let lastPointerPosition: Vector2 | null = $state(null);
+    let isDragging = $state(false);
+
     function handlePointerMove(event: PointerEvent) {
         const svg = event.currentTarget as SVGSVGElement;
-        
+
         const point = viewport.clientToSvg(
             { x: event.clientX, y: event.clientY },
             svg
         );
-        
-        graphPosition = viewport.viewportToGraph(point)
-        
-        gridIndexLocal = viewport.graphToGridLocal(graphPosition)
+
+        if (isDragging && lastPointerPosition) {
+            const delta: Vector2 = {
+                x: point.x - lastPointerPosition.x,
+                y: point.y - lastPointerPosition.y
+            };
+
+            viewport.panByPixels(delta);
+        }
+
+        lastPointerPosition = point;
+
+        graphPosition = viewport.viewportToGraph(point);
+        gridIndexLocal = viewport.graphToGridLocal(graphPosition);
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+        if (event.button !== 0) return;
+
+        const svg = event.currentTarget as SVGSVGElement;
+
+        isDragging = true;
+
+        lastPointerPosition = viewport.clientToSvg(
+            { x: event.clientX, y: event.clientY },
+            svg
+        );
+
+        svg.setPointerCapture(event.pointerId);
+    }
+
+    function handlePointerUp(event: PointerEvent) {
+        isDragging = false;
+        lastPointerPosition = null;
+
+        const svg = event.currentTarget as SVGSVGElement;
+
+        if (svg.hasPointerCapture(event.pointerId)) {
+            svg.releasePointerCapture(event.pointerId);
+        }
     }
 </script>
 
@@ -43,7 +82,10 @@
         width={viewport.width}
         height={viewport.height}
         viewBox={`0 0 ${viewport.width} ${viewport.height}`}
+        onpointerdown={handlePointerDown}
         onpointermove={handlePointerMove}
+        onpointerup={handlePointerUp}
+        onpointercancel={handlePointerUp}
 >
     <!-- Draw Grid Lines-->
     {#if viewport.enableGridLines}
@@ -135,5 +177,14 @@
     svg {
         border: 1px solid black;
         margin: 5px;
+        
+        /*cursor: crosshair;*/
+        /*cursor: grab;*/
+        touch-action: none;
+    }
+
+    svg:active {
+        /*cursor: grabbing;*/
+        cursor: crosshair;
     }
 </style>

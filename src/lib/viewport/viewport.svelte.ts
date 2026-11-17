@@ -386,4 +386,18 @@ export class Viewport {
     ): number {
         return offset + (index + t) * cellSize;
     }
+
+    pan(delta: Vector2): void {
+        this.viewCenter = {
+            x: this._viewCenter.x + delta.x,
+            y: this._viewCenter.y + delta.y
+        };
+    }
+
+    panByPixels(delta: Vector2): void {
+        this.pan({
+            x: -delta.x / this._scale,
+            y: delta.y / this._scale
+        });
+    }
 }
