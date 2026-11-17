@@ -400,4 +400,44 @@ export class Viewport {
             y: delta.y / this._scale
         });
     }
+    
+    resetView()
+    {
+        this._viewCenter = {x: 0, y: 0};
+        this._scale = 20;
+        
+    }
+
+    zoom(factor: number): void {
+        if (!Number.isFinite(factor) || factor <= 0) {
+            throw new RangeError("Zoom factor must be finite and positive.");
+        }
+
+        this.scale = this._scale * factor;
+    }
+
+    zoomAt(factor: number, point: Vector2): void {
+        if (!Number.isFinite(factor) || factor <= 0) {
+            throw new RangeError("Zoom factor must be finite and positive.");
+        }
+
+        const newScale = this._scale * factor;
+
+        if (!Number.isFinite(newScale) || newScale <= 0) {
+            throw new RangeError("Resulting scale must be finite and positive.");
+        }
+
+        const newCenter: Vector2 = {
+            x: point.x + (this._viewCenter.x - point.x) / factor,
+            y: point.y + (this._viewCenter.y - point.y) / factor
+        };
+
+        // Validate the new center before changing either property.
+        if (!Number.isFinite(newCenter.x) || !Number.isFinite(newCenter.y)) {
+            throw new RangeError("Resulting view center must be finite.");
+        }
+
+        this.scale = newScale;
+        this.viewCenter = newCenter;
+    }
 }

@@ -12,7 +12,7 @@
         enableViewportAxes: false
     })
     
-    viewport.scale = 20
+    viewport.scale = 10
 
     let graphPosition: Vector2 = $state({x: 0, y: 0})
     let gridIndexLocal = $state(viewport.graphToGridLocal({ x: 0, y: 0 }));
@@ -68,14 +68,40 @@
             svg.releasePointerCapture(event.pointerId);
         }
     }
+
+    function handleWheel(event: WheelEvent) {
+        event.preventDefault();
+
+        const svg = event.currentTarget as SVGSVGElement;
+
+        const svgPoint = viewport.clientToSvg(
+            { x: event.clientX, y: event.clientY },
+            svg
+        );
+
+        const graphPoint = viewport.viewportToGraph(svgPoint);
+
+        const zoomFactor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+
+        viewport.zoomAt(zoomFactor, graphPoint);
+
+        graphPosition = viewport.viewportToGraph(svgPoint);
+        gridIndexLocal = viewport.graphToGridLocal(graphPosition);
+    }
+    
 </script>
 
 
-<div>
-    Pos: ({(graphPosition.x).toFixed(3)},{(graphPosition.y).toFixed(3)})
-    Cell: ({gridIndexLocal.index.x},{gridIndexLocal.index.y})
-    Cell Local: ({(gridIndexLocal.local.x).toFixed(2)},{(gridIndexLocal.local.y).toFixed(2)})
+<div style="flex-direction: row; display: flex;">
+    <div>
+        Pos: ({(graphPosition.x).toFixed(3)},{(graphPosition.y).toFixed(3)})
+        Cell: ({gridIndexLocal.index.x},{gridIndexLocal.index.y})
+        Cell Local: ({(gridIndexLocal.local.x).toFixed(2)},{(gridIndexLocal.local.y).toFixed(2)})
+    </div>
+    <button style="margin: 0px 10px;" onclick={() =>  viewport.resetView()}>Reset View</button>
 </div>
+
+
 <svg
         role = "img"
         aria-label="Interactive graph viewport"
@@ -86,6 +112,7 @@
         onpointermove={handlePointerMove}
         onpointerup={handlePointerUp}
         onpointercancel={handlePointerUp}
+        onwheel={handleWheel}
 >
     <!-- Draw Grid Lines-->
     {#if viewport.enableGridLines}
@@ -172,6 +199,7 @@
     {/if}
 
 </svg>
+
 
 <style>
     svg {
