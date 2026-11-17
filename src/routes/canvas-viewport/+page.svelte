@@ -24,7 +24,6 @@
     let gridIndexLocal = $state(grid.worldToGridLocal({ x: 0, y: 0 }));
     
     onMount(() => {
-        canvas = document.querySelector("canvas");
         ctx = canvas?.getContext("2d") ?? null;
 
         if (!ctx) return;
@@ -61,9 +60,9 @@
             ctx.lineTo(axes.verticalAxis.end.x, axes.verticalAxis.end.y);
             ctx.stroke();
     }
-    
+
     function handlePointerMove(event: PointerEvent) {
-            if(!canvas) return;
+            if (!canvas) return;
 
             const point = clientToCanvas(
                     { x: event.clientX, y: event.clientY },
@@ -77,15 +76,16 @@
                     };
 
                     viewport.panByPixels(delta);
+
+                    if (ctx) {
+                            render(ctx);
+                    }
             }
 
             lastPointerPosition = point;
 
             graphPosition = viewport.viewportToWorld(point);
             gridIndexLocal = grid.worldToGridLocal(graphPosition);
-
-            if (!ctx) return;
-            render(ctx)
     }
 
     function handlePointerDown(event: PointerEvent) {
@@ -102,17 +102,17 @@
     }
 
     function handlePointerUp(event: PointerEvent) {
-            if (!canvas || event.button !== 0) return;
-            
             isDragging = false;
             lastPointerPosition = null;
+            
+            if (!canvas) return;
             
             if (canvas.hasPointerCapture(event.pointerId)) {
                     canvas.releasePointerCapture(event.pointerId);
             }
     }
 
-    function handleWheel(event: WheelEvent) {3
+    function handleWheel(event: WheelEvent) {
             if(!canvas) return;
             event.preventDefault();
             
@@ -143,6 +143,7 @@
 </div>
 <div>
     <canvas 
+        bind:this={canvas}    
         width={viewport.width}
         height={viewport.height}
         onpointerdown={handlePointerDown}
