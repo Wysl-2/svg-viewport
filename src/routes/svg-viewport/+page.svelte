@@ -5,6 +5,9 @@
     import { GridGeometry } from "#lib/viewport/geometry/gridGeometry.svelte.ts";
     import { clientToSvg } from "#lib/viewport/renderers/coordinates.ts";
     import type { Vector2 } from "#lib/viewport/types.ts";
+    import {
+        createSvgViewportAction
+    } from "#lib/viewport/controls/viewportControls.ts";
 
     const viewport = new Viewport({
         width: 800,
@@ -21,84 +24,19 @@
     const axesGeometry = new AxesGeometry(viewport)
     const gridGeometry = new GridGeometry(viewport, grid)
 
-    let enableGridLines = $state(true)
-    let enableGraphAxes = $state(true)
-
     let graphPosition: Vector2 = $state({x: 0, y: 0})
     let gridIndexLocal = $state(grid.worldToGridLocal({ x: 0, y: 0 }));
 
-    let lastPointerPosition: Vector2 | null = $state(null);
-    let isDragging = $state(false);
-
-    function handlePointerMove(event: PointerEvent) {
-        const svg = event.currentTarget as SVGSVGElement;
-
-        const point = clientToSvg(
-            { x: event.clientX, y: event.clientY },
-            svg
-        );
-
-        if (isDragging && lastPointerPosition) {
-            const delta: Vector2 = {
-                x: point.x - lastPointerPosition.x,
-                y: point.y - lastPointerPosition.y
-            };
-
-            viewport.panByPixels(delta);
+    const controls = createSvgViewportAction(viewport, {
+        onPointerPosition: (position) => {
+            graphPosition = position;
+            gridIndexLocal = grid.worldToGridLocal(position);
         }
+    });
 
-        lastPointerPosition = point;
-
-        graphPosition = viewport.viewportToWorld(point);
-        gridIndexLocal = grid.worldToGridLocal(graphPosition);
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-        if (event.button !== 0) return;
-
-        const svg = event.currentTarget as SVGSVGElement;
-
-        isDragging = true;
-
-        lastPointerPosition = clientToSvg(
-            { x: event.clientX, y: event.clientY },
-            svg
-        );
-
-        svg.setPointerCapture(event.pointerId);
-    }
-
-    function handlePointerUp(event: PointerEvent) {
-        isDragging = false;
-        lastPointerPosition = null;
-
-        const svg = event.currentTarget as SVGSVGElement;
-
-        if (svg.hasPointerCapture(event.pointerId)) {
-            svg.releasePointerCapture(event.pointerId);
-        }
-    }
-
-    function handleWheel(event: WheelEvent) {
-        event.preventDefault();
-
-        const svg = event.currentTarget as SVGSVGElement;
-
-        const svgPoint = clientToSvg(
-            { x: event.clientX, y: event.clientY },
-            svg
-        );
-
-        const graphPoint = viewport.viewportToWorld(svgPoint);
-
-        const zoomFactor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
-
-        viewport.zoomAt(zoomFactor, graphPoint);
-
-        graphPosition = viewport.viewportToWorld(svgPoint);
-        gridIndexLocal = grid.worldToGridLocal(graphPosition);
-    }
-
+    let enableGridLines = $state(true)
+    let enableGraphAxes = $state(true)
+    
 </script>
 
 
@@ -112,17 +50,13 @@
 </div>
 
 
-<svg
+<svg    
         role = "img"
         aria-label="Interactive graph viewport"
         width={viewport.width}
         height={viewport.height}
         viewBox={`0 0 ${viewport.width} ${viewport.height}`}
-        onpointerdown={handlePointerDown}
-        onpointermove={handlePointerMove}
-        onpointerup={handlePointerUp}
-        onpointercancel={handlePointerUp}
-        onwheel={handleWheel}
+        use:controls
 >
     <!-- Draw Grid Lines-->
     {#if enableGridLines}
